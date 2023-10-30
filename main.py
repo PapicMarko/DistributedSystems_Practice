@@ -23,4 +23,13 @@ async def zbroj_fib(n: int):
     rezultat = pozovi_fib(n)
     return {"input": n, "result": rezultat}
 
+    with ThreadPool(processes = 100) as pool:
+        rezultat = pool.map(pozovi_fib, [0, 1, 2, 3])
 
+        print(rezultat)
+
+    rezultat = 0
+    for x in range(n):
+        rezultat += pozovi_fib(x)
+
+    return {"input": n, "result": rezultat}
