@@ -3,6 +3,9 @@ import requests
 import time
 import asyncio
 import httpx
+import concurrent.futures
+import random
+
 
 from multiprocessing.pool import ThreadPool
 
@@ -61,3 +64,60 @@ async def zbroj_fib(n: int):
 
 
 # Pitanje: koliko traje izvođenje za N=100?
+
+
+"""#WORKER 1
+app = fastapi.FastAPI()
+worker_service_url = "http://127.0.0.1:8003"
+@app.get("/fibonacci/{n}")
+async def calculate_fibonacci(n: int):
+    # Pošaljite zahtjev za izračunom Fibonacci broja radniku.
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{worker_service_url}/fib/{n}")
+        result = response.json()
+
+    return {"input": n, "result": result["result"]}
+
+
+
+app = fastapi.FastAPI()
+
+def calculate_fibonacci_worker(port, n):
+    url = f"http://localhost:{port}/fib/{n}"
+    with httpx.Client() as client:
+        response = client.get(url)
+        result = response.json()["result"]
+    return result
+
+@app.get("/fibonacci_multiport/{n}")
+async def calculate_fibonacci_multiport(n: int):
+    ports = [8003, 8004, 8005, 8006]  # Portovi za različite workere
+
+    # Kreirajte bazen radnika s 4 radnika.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        # Izračunajte Fibonacci brojeve za n koristeći različite portove.
+        results = list(executor.map(calculate_fibonacci_worker, ports, [n] * len(ports)))
+
+    return {"input": n, "results": results}
+"""
+
+
+
+app = fastapi.FastAPI()
+
+# Konfigurirajte portove za svakog workera
+worker_ports = [8003, 8004, 8005, 8006]
+
+def calculate_fibonacci_worker(n):
+    # Odaberite slučajni port iz liste
+    port = random.choice(worker_ports)
+    url = f"http://localhost:{port}/fib/{n}"
+    with httpx.Client() as client:
+        response = client.get(url)
+        result = response.json()["result"]
+    return {"input": n, "result": result, "used_port": port}
+
+@app.get("/fibonacci_randomport/{n}")
+async def calculate_fibonacci_randomport(n: int):
+    result = calculate_fibonacci_worker(n)
+    return result
